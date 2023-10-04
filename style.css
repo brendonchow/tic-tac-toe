@@ -24,6 +24,10 @@ body {
   grid-template-rows: auto 1fr;
 }
 
+.blur {
+  filter: blur(2px);
+}
+
 h1 {
   /* To override Normalize.css h1 margin */
   margin: 0; 
@@ -46,7 +50,7 @@ main {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 150px));
   outline: 1px solid var(--main-background-color);
-  
+  grid-template-rows: repeat(3, 1fr);
   aspect-ratio: 1;
 }
 
@@ -59,7 +63,6 @@ main {
   display: grid;
   box-shadow: 0px -2px 2px var(--box-shadow-color);
   position: relative;
-  border-radius: 5px;
 }
 
 .turn-selection {
@@ -69,7 +72,11 @@ main {
 
 .settings button {
   background-color: var(--header-background-color);
-  border-radius: 5px;
+
+}
+
+.board > button {
+  font-size: 100px;
 }
 
 button {
@@ -83,4 +90,31 @@ button {
 .settings button:active {
   filter: brightness(90%);
 }
+
+.restart {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+dialog:focus {
+  outline: none;
+}
+
+dialog {
+  background-color: transparent;
+  position: relative;
+  user-select: none;
+  top: 50%;
+  left: 50%;  
+  transform: translate(-50%, -50%);
+  color: var(--header-background-color);
+  font-size: 50px;
+  width: 100%;
+}
+
+dialog p {
+
+}
+
+
 
