@@ -189,8 +189,8 @@ const DisplayController = (() => {
   }
 
   function _makeAIMove() {
-    const aiMove = _playAI(board, currentTurn, currentTurn === "X" ? 1 : -1);
-    makeMove(aiMove[1][0], aiMove[1][1], getCellGivenID(aiMove[1][0] * 3 + aiMove[1][1]));
+    const aiMove = _playAI(board, currentTurn);
+    makeMove(aiMove[0], aiMove[1], getCellGivenID(aiMove[0] * 3 + aiMove[1]));
   }
 
   function getCellGivenID(id) {
@@ -201,36 +201,93 @@ const DisplayController = (() => {
     }
   }
 
-  function _playAI(board, playAs, prev) {
-    const boardWinner = board.checkWinner();
-    if (boardWinner === "X") {
-      return [1];
-    } else if (boardWinner === "O") {
-      return [-1];
+  // function _playAI(board, playAs, prev) {
+  //   const boardWinner = board.checkWinner();
+  //   if (boardWinner === "X") {
+  //     return [1];
+  //   } else if (boardWinner === "O") {
+  //     return [-1];
+  //   }
+
+  //   const actions = board.getActions();
+  //   if (actions.length === 0) {
+  //     return [0];
+  //   } else if (playAs === "X") {
+  //     let max = [-2];
+  //     for (const action of actions) {
+  //       const [result, _] = _playAI(board.updateCellAI(action[0], action[1], "X"), "O", max[0]);
+  //       if (result === 1) return [1, action];
+  //       if (result >= prev) return [result, action];
+  //       max = max[0] >= result ? max : [result, action];
+  //     }
+  //     return max;
+  //   } else {
+  //     let min = [2];
+  //     for (const action of actions) {
+  //       const [result, _] = _playAI(board.updateCellAI(action[0], action[1], "O"), "X", min[0]);
+  //       if (result === -1) return [-1, action];
+  //       if (result <= prev) return [result, action];
+  //       min = min[0] <=  result ? min : [result, action];
+  //     }
+  //     return min;
+  //   }
+  // }
+
+  function _playAI(board, playAs) {
+    const actions = board.getActions();
+    if (playAs === "X") {
+      let max = [-1, actions[0], 100];
+      for (const action of actions) {
+        const [result, depth] = minimizeAI(board.updateCellAI(action[0], action[1], "X"), max[0]);
+        if (result === 1 && max[0] === 1) {
+          max = depth >= max[2] ? max : [result, action, depth];
+        } else max = max[0] >= result ? max : [result, action, depth];
+      }
+      return max[1];
+    } else {
+      let min = [1, actions[0], 100];
+      for (const action of actions) {
+        const [result, depth] = maximizeAI(board.updateCellAI(action[0], action[1], "O"), min[0]);
+        if (result === -1 && min[0] === -1) {
+          max = depth >= min[2] ? min : [result, action, depth];
+        } else min = min[0] <= result ? min : [result, action, depth];
+      }
+      return min[1];
     }
+  }
+
+  function minimizeAI(board, prev) {
+    const boardWinner = board.checkWinner();
+    if (boardWinner === "X") return [1, 1];
+     else if (boardWinner === "O") return [-1, 1];
 
     const actions = board.getActions();
-    if (actions.length === 0) {
-      return [0];
-    } else if (playAs === "X") {
-      let max = [-1, actions[0]];
-      for (const action of actions) {
-        const [result, _] = _playAI(board.updateCellAI(action[0], action[1], "X"), "O", max[0]);
-        if (result === 1) return [1, action];
-        if (result >= prev) return [result, action];
-        max = max[0] >= result ? max : [result, action];
-      }
-      return max;
-    } else {
-      let min = [1, actions[0]];
-      for (const action of actions) {
-        const [result, _] = _playAI(board.updateCellAI(action[0], action[1], "O"), "X", min[0]);
-        if (result === -1) return [-1, action];
-        if (result <= prev) return [result, action];
-        min = min[0] <=  result ? min : [result, action];
-      }
-      return min;
+    if (actions.length === 0) return [0, 1];
+
+    let min = [1, 100];
+    for (const action of actions) {
+      const [result, depth] = maximizeAI(board.updateCellAI(action[0], action[1], "O"), min);
+      if (result <= prev) return [result, depth + 1];
+      min = min <= result ? min : [result, depth]; 
     }
+    return [min[0], min[1] + 1];
+  }
+
+  function maximizeAI(board, prev) {
+    const boardWinner = board.checkWinner();
+    if (boardWinner === "X") return [1, 1] ;
+    else if (boardWinner === "O") return [-1, 1];
+
+    const actions = board.getActions();
+    if (actions.length === 0) return [0, 1];
+
+    let max = [-1, 100];
+    for (const action of actions) {
+      const [result, depth] = minimizeAI(board.updateCellAI(action[0], action[1], "X"), max);
+      if (result >= prev) return [result, depth + 1];
+      max = max >= result ? max : [result, depth];
+    }
+    return [max[0], max[1] + 1];
   }
 
   return {
