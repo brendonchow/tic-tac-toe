@@ -112,8 +112,8 @@ dialog {
   width: 100%;
 }
 
-dialog p {
-
+.player-first.active, .computer-first.active {
+  border: 1px black solid;
 }
 
 

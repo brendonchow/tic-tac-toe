@@ -87,7 +87,7 @@ const Player = () => {
   };
 };
 
-const Master = (() => {
+const DisplayController = (() => {
   const player = Player();
   const computer = Player();
   const board = Board();
@@ -96,10 +96,18 @@ const Master = (() => {
   boardCells.forEach(cell => cell.addEventListener("click", _clickCell));
 
   const playerFirstButton = document.querySelector(".player-first");
-  playerFirstButton.addEventListener("click", _setPlayerTurns.bind(playerFirstButton, player, computer));
+  playerFirstButton.addEventListener("click", () => {
+    _setPlayerTurns(player, computer);
+    playerFirstButton.classList.add("active");
+    computerFirstButton.classList.remove("active");
+  });
 
   const computerFirstButton = document.querySelector(".computer-first");
-  computerFirstButton.addEventListener("click", _setPlayerTurns.bind(computerFirstButton, computer, player)); 
+  computerFirstButton.addEventListener("click", () => {
+    _setPlayerTurns(computer, player);
+    playerFirstButton.classList.remove("active");
+    computerFirstButton.classList.add("active");
+  }); 
 
   const restartButton = document.querySelector(".restart");
   restartButton.addEventListener("click", _restartBoards);
@@ -109,7 +117,6 @@ const Master = (() => {
   dialog.addEventListener("click", () => {
     _restartBoards();
     dialog.close();
-    currentTurn = "X"; 
     body.classList.remove("blur");
   })  
 
@@ -122,6 +129,16 @@ const Master = (() => {
   function _restartBoards() {
     _restartDisplayBoard();
     board.clearBoard();
+    currentTurn = "X";
+    if (computer.getPlayAs() === currentTurn) {
+      _makeComputerFirstMove();
+    }
+  }
+
+  function _makeComputerFirstMove() {
+    const actions = [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]];
+    const action = actions[Math.floor(Math.random() * actions.length)];
+    makeMove(action[0], action[1], getCellGivenID(action[0] * 3 + action[1]));
   }
 
   function _restartDisplayBoard() {
@@ -167,21 +184,24 @@ const Master = (() => {
 
     currentTurn = currentTurn === "X" ? "O" : "X";
     if (aiPlay && computer.getPlayAs() === currentTurn) {
-      const aiMove = _playAI(board, currentTurn);
-      let correspondingCell;
-      for (const cell of boardCells) {
-        if (Number(cell.id) === aiMove[1][0] * 3 + aiMove[1][1]) {
-          
-          correspondingCell = cell;
-          break;
-        }
-      }
-      makeMove(aiMove[1][0], aiMove[1][1], correspondingCell);
-      
+      _makeAIMove();
     }
   }
 
-  function _playAI(board, playAs) {
+  function _makeAIMove() {
+    const aiMove = _playAI(board, currentTurn, currentTurn === "X" ? 1 : -1);
+    makeMove(aiMove[1][0], aiMove[1][1], getCellGivenID(aiMove[1][0] * 3 + aiMove[1][1]));
+  }
+
+  function getCellGivenID(id) {
+    for (const cell of boardCells) {
+      if (Number(cell.id) === id) {
+        return cell;
+      }
+    }
+  }
+
+  function _playAI(board, playAs, prev) {
     const boardWinner = board.checkWinner();
     if (boardWinner === "X") {
       return [1];
@@ -193,19 +213,21 @@ const Master = (() => {
     if (actions.length === 0) {
       return [0];
     } else if (playAs === "X") {
-      let max = [-1, []];
+      let max = [-1, actions[0]];
       for (const action of actions) {
-        const result = _playAI(board.updateCellAI(action[0], action[1], "X"), "O");
-        if (result[0] === 1) return [1, action];
-        max = max[0] > result[0] ? max : [result[0], action];
+        const [result, _] = _playAI(board.updateCellAI(action[0], action[1], "X"), "O", max[0]);
+        if (result === 1) return [1, action];
+        if (result >= prev) return [result, action];
+        max = max[0] >= result ? max : [result, action];
       }
       return max;
     } else {
-      let min = [1, []];
+      let min = [1, actions[0]];
       for (const action of actions) {
-        const result = _playAI(board.updateCellAI(action[0], action[1], "O"), "X");
-        if (result[0] === -1) return [-1, action]
-        min = min[0] < result[0] ? min : [result[0], action]
+        const [result, _] = _playAI(board.updateCellAI(action[0], action[1], "O"), "X", min[0]);
+        if (result === -1) return [-1, action];
+        if (result <= prev) return [result, action];
+        min = min[0] <=  result ? min : [result, action];
       }
       return min;
     }
