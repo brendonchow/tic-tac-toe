@@ -1,5 +1,8 @@
-const Board = (() => {
-  const state = [["", "", ""], ["", "", ""], ["", "", ""]];
+const Board = initialState => {
+  // Deep copy initial state if initial state is given.
+  const state = initialState 
+                ? JSON.parse(JSON.stringify(initialState)) 
+                : [["", "", ""], ["", "", ""], ["", "", ""]];
 
   function clearBoard() {
     for (let i = 0; i < state.length; i++) {
@@ -9,9 +12,9 @@ const Board = (() => {
     }
   }
 
-  function updateCell(position, currentTurn) {
-    if (state[Math.floor(position / 3)][position % 3] !== "") return;
-    state[Math.floor(position / 3)][position % 3] = currentTurn;
+  function updateCell(row, col, playAs) {
+    if (state[row][col] !== "") return;
+    state[row][col] = playAs;
   }
 
   function checkWinner() {
@@ -31,24 +34,36 @@ const Board = (() => {
     const actions = [];
     for (let i = 0; i < state.length; i++) {
       for (let j = 0; j < state[i].length; j++) {
-        if (state[i][j] === "") actions.push((i, j));
+        if (state[i][j] === "") actions.push([i, j]);
       }
     }
     return actions;
   }
 
-  function printState() {
-    console.log(state)
+  function getState() {
+    return JSON.parse(JSON.stringify(state));
+  }
+
+  function copyBoard() {
+    return Board(JSON.parse(JSON.stringify(state)));
+  }
+
+  function updateCellAI(row, col, playAs) {
+    const newBoard = copyBoard();
+    newBoard.updateCell(row, col, playAs);
+    return newBoard;
   }
 
   return {
     clearBoard,
     updateCell,
-    printState,
+    copyBoard,
     checkWinner,
     getActions,
+    getState,
+    updateCellAI,
   };
-})();
+};
 
 const Player = () => {
   let playAs;
@@ -75,6 +90,7 @@ const Player = () => {
 const Master = (() => {
   const player = Player();
   const computer = Player();
+  const board = Board();
 
   const boardCells = document.querySelectorAll(".board > button");
   boardCells.forEach(cell => cell.addEventListener("click", _clickCell));
@@ -93,45 +109,28 @@ const Master = (() => {
   dialog.addEventListener("click", () => {
     _restartBoards();
     dialog.close();
+    currentTurn = "X"; 
     body.classList.remove("blur");
   })  
+
   const announceWinnerText = document.querySelector(".announce-winner");
 
   let currentTurn = "X";
   _setPlayerTurns(player, computer);
+  let aiPlay = true;
 
   function _restartBoards() {
     _restartDisplayBoard();
-    Board.clearBoard();
-    console.log("Clear board"); 
+    board.clearBoard();
   }
 
   function _restartDisplayBoard() {
     boardCells.forEach(button => button.textContent = "");
   }
 
-  function _clickCell(event) {
-    const position = event.target.id;
-    if (event.target.textContent !== "") return;
-    Board.updateCell(position, currentTurn);
-    event.target.textContent = currentTurn;
-    currentTurn = currentTurn === "X" ? "O" : "X";
-
-    const winner = Board.checkWinner();
-    if (winner) {
-      announceWinnerText.textContent = `The winner is ${winner} `;
-      _openDialog();
-    } 
-    else if (Board.getActions().length === 0) {
-      announceWinnerText.textContent = `It is a draw!`;
-      _openDialog();
-    } 
-  }
-
   function _openDialog() {
       dialog.showModal();
-      body.classList.add("blur");  
-      currentTurn = "X";  
+      body.classList.add("blur");   
   }
 
   function _setPlayerTurns(firstPlayer, secondPlayer) {
@@ -142,6 +141,74 @@ const Master = (() => {
 
   function getCurrentTurn() {
     return currentTurn;
+  }
+
+  function _clickCell(event) {
+    if (event.target.textContent !== "") return;
+    const row = Math.floor(event.target.id / 3);
+    const col = event.target.id % 3;
+    makeMove(row, col, event.target);
+  }
+
+  function makeMove(row, col, correspondingCell) {
+    correspondingCell.textContent = currentTurn;
+    board.updateCell(row, col, currentTurn);
+    
+    const winner = board.checkWinner();
+    if (winner) {
+      announceWinnerText.textContent = `The winner is ${winner} `;
+      _openDialog();
+      return;
+    } else if (board.getActions().length === 0) {
+      announceWinnerText.textContent = `It is a draw!`;
+      _openDialog();
+      return;
+    } 
+
+    currentTurn = currentTurn === "X" ? "O" : "X";
+    if (aiPlay && computer.getPlayAs() === currentTurn) {
+      const aiMove = _playAI(board, currentTurn);
+      let correspondingCell;
+      for (const cell of boardCells) {
+        if (Number(cell.id) === aiMove[1][0] * 3 + aiMove[1][1]) {
+          
+          correspondingCell = cell;
+          break;
+        }
+      }
+      makeMove(aiMove[1][0], aiMove[1][1], correspondingCell);
+      
+    }
+  }
+
+  function _playAI(board, playAs) {
+    const boardWinner = board.checkWinner();
+    if (boardWinner === "X") {
+      return [1];
+    } else if (boardWinner === "O") {
+      return [-1];
+    }
+
+    const actions = board.getActions();
+    if (actions.length === 0) {
+      return [0];
+    } else if (playAs === "X") {
+      let max = [-1, []];
+      for (const action of actions) {
+        const result = _playAI(board.updateCellAI(action[0], action[1], "X"), "O");
+        if (result[0] === 1) return [1, action];
+        max = max[0] > result[0] ? max : [result[0], action];
+      }
+      return max;
+    } else {
+      let min = [1, []];
+      for (const action of actions) {
+        const result = _playAI(board.updateCellAI(action[0], action[1], "O"), "X");
+        if (result[0] === -1) return [-1, action]
+        min = min[0] < result[0] ? min : [result[0], action]
+      }
+      return min;
+    }
   }
 
   return {
