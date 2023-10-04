@@ -1,0 +1,86 @@
+:root {
+  --main-background-color: rgb(240, 240, 240);
+  --box-shadow-color: rgb(225, 225, 225);
+  --header-background-color: white;
+}
+
+html {
+  box-sizing: border-box;
+  font-family: Roboto, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+body {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+h1 {
+  /* To override Normalize.css h1 margin */
+  margin: 0; 
+  text-align: center;
+  padding: min(40px, 10vw);
+  box-shadow: 0px 5px 5px var(--box-shadow-color);
+  position: relative;
+}
+
+main {
+  padding: min(50px, 5vw);
+  background-color: var(--main-background-color);
+  display: grid;
+  justify-content: center;
+  grid-template-rows: max-content auto;
+  gap: 10px;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 150px));
+  outline: 1px solid var(--main-background-color);
+  
+  aspect-ratio: 1;
+}
+
+.board button {
+  outline: 1px black solid;
+  background-color: var(--main-background-color);
+}
+
+.settings {
+  display: grid;
+  box-shadow: 0px -2px 2px var(--box-shadow-color);
+  position: relative;
+  border-radius: 5px;
+}
+
+.turn-selection {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(10px, 1fr));
+}
+
+.settings button {
+  background-color: var(--header-background-color);
+  border-radius: 5px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.settings button:hover {
+  filter: brightness(95%);
+}
+
+.settings button:active {
+  filter: brightness(90%);
+}
+
