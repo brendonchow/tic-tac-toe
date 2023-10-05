@@ -120,11 +120,12 @@ const Ai = () => {
     const actions = board.getActions();
     if (actions.length === 0) return [0, 1];
 
-    let min = [1, 100];
+    let min = [1];
     for (const action of actions) {
-      const [result, depth] = _maximizeAI(board.updateCellAI(action[0], action[1], "O"), min);
+      const [result, depth] = _maximizeAI(board.updateCellAI(action[0], action[1], "O"), min[0]);
       if (result <= prev) return [result, depth + 1];
-      min = min[0] <= result ? min : [result, depth]; 
+      if (min.length === 1) min = [result, depth];
+      else min = min[0] <= result ? min : [result, depth]; 
     }
     return [min[0], min[1] + 1];
   }
@@ -137,14 +138,15 @@ const Ai = () => {
     const actions = board.getActions();
     if (actions.length === 0) return [0, 1];
 
-    let max = [-1, 100];
+    let max = [-1];
     for (const action of actions) {
-      const [result, depth] = _minimizeAI(board.updateCellAI(action[0], action[1], "X"), max);
+      const [result, depth] = _minimizeAI(board.updateCellAI(action[0], action[1], "X"), max[0]);
       if (result >= prev) return [result, depth + 1];
-      max = max[0] >= result ? max : [result, depth];
+      if (max.length === 1) max = [result, depth];
+      else max = max[0] >= result ? max : [result, depth];
     }
     return [max[0], max[1] + 1];
-  }
+  } 
 
   return Object.assign({}, Player(), {
     playAI,
@@ -261,7 +263,7 @@ const DisplayController = (() => {
   }
 
   function _makeAIMove() {
-    const aiMove = _playAI(board, currentTurn);
+    const aiMove = computer.playAI(board, currentTurn);
     makeMove(aiMove[0], aiMove[1], getCellGivenID(aiMove[0] * 3 + aiMove[1]));
   }
 
