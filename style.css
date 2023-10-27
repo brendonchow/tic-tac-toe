@@ -63,6 +63,7 @@ main {
   display: grid;
   box-shadow: 0px -2px 2px var(--box-shadow-color);
   position: relative;
+  max-width: 200px;
 }
 
 .turn-selection {
